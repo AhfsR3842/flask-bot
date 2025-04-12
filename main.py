@@ -52,7 +52,7 @@ def send_daily_message():
 
 # === Планировщик с локальной зоной ===
 scheduler = BackgroundScheduler(timezone='Europe/Kyiv')
-scheduler.add_job(send_daily_message, 'cron', hour=17, minute=39)  # по Киеву
+scheduler.add_job(send_daily_message, 'cron', hour=17, minute=44)  # по Киеву
 scheduler.start()
 
 if __name__ == '__main__':
