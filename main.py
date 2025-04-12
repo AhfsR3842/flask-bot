@@ -9,19 +9,19 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 @app.route('/')
 def home():
-    return "Ассистент жив."
+    return "Ассистент Алекс на связи."
 
 @app.route('/bot', methods=['POST'])
 def telegram_webhook():
     data = request.get_json()
-    print("==> Входящее сообщение:", data)
+    print("==> Входящее сообщение:", data, flush=True)
 
     try:
         if "message" in data:
             chat_id = data["message"]["chat"]["id"]
-            print("==> CHAT_ID:", chat_id)  # <-- Вот тут напечатается ID
+            print("==> CHAT_ID:", chat_id, flush=True)
             text = data["message"].get("text", "")
-            reply = f"Алекс получил: {text}" + 5  # это вызовет ошибку
+            reply = f"Алекс получил: {text}"
 
             requests.post(TELEGRAM_API_URL, json={
                 "chat_id": chat_id,
@@ -29,7 +29,7 @@ def telegram_webhook():
             })
 
     except Exception as e:
-        print("==> Ошибка:", e)
+        print("==> Ошибка:", e, flush=True)
 
     return "OK", 200
 
