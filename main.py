@@ -14,18 +14,25 @@ def home():
 @app.route('/bot', methods=['POST'])
 def telegram_webhook():
     data = request.get_json()
-    print("Получено сообщение:", data)
+    print("==> Получено сообщение:", data)
 
-    if "message" in data:
-        chat_id = data["message"]["chat"]["id"]
-        text = data["message"].get("text", "")
-        reply = f"Ты написал: {text}"
+    try:
+        if "message" in data:
+            chat_id = data["message"]["chat"]["id"]
+            text = data["message"].get("text", "")
+            reply = f"Ты написал: {text}"
 
-        # Отправка ответа обратно
-        requests.post(TELEGRAM_API_URL, json={
-            "chat_id": chat_id,
-            "text": reply
-        })
+            print(f"==> Отправка в чат {chat_id}: {reply}")
+
+            resp = requests.post(TELEGRAM_API_URL, json={
+                "chat_id": chat_id,
+                "text": reply
+            })
+
+            print("==> Ответ Telegram API:", resp.text)
+
+    except Exception as e:
+        print("==> Ошибка обработки:", e)
 
     return "OK", 200
 
