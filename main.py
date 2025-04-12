@@ -9,30 +9,27 @@ TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 
 @app.route('/')
 def home():
-    return "Бот подключен к Telegram!"
+    return "Ассистент жив."
 
 @app.route('/bot', methods=['POST'])
 def telegram_webhook():
     data = request.get_json()
-    print("==> Получено сообщение:", data)
+    print("==> Входящее сообщение:", data)
 
     try:
         if "message" in data:
             chat_id = data["message"]["chat"]["id"]
+            print("==> CHAT_ID:", chat_id)  # <-- Вот тут напечатается ID
             text = data["message"].get("text", "")
-            reply = f"Ты написал: {text}"
+            reply = f"Алекс получил: {text}"
 
-            print(f"==> Отправка в чат {chat_id}: {reply}")
-
-            resp = requests.post(TELEGRAM_API_URL, json={
+            requests.post(TELEGRAM_API_URL, json={
                 "chat_id": chat_id,
                 "text": reply
             })
 
-            print("==> Ответ Telegram API:", resp.text)
-
     except Exception as e:
-        print("==> Ошибка обработки:", e)
+        print("==> Ошибка:", e)
 
     return "OK", 200
 
