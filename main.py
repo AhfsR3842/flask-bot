@@ -21,7 +21,7 @@ def telegram_webhook():
             chat_id = data["message"]["chat"]["id"]
             print("==> CHAT_ID:", chat_id)  # <-- Вот тут напечатается ID
             text = data["message"].get("text", "")
-            reply = f"Алекс получил: {text}"
+            reply = f"Алекс получил: {text}" + 5  # это вызовет ошибку
 
             requests.post(TELEGRAM_API_URL, json={
                 "chat_id": chat_id,
