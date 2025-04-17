@@ -212,34 +212,20 @@ def telegram_webhook():
                 send_evening_goal()
                 return "OK", 200
 
+    
             if text.strip().lower() == "/цем":
                 cement_stats = load_cement_stats()
-                reply = f"📊 Статистика цемов:
-Всего: {cement_stats['total']}
-Подряд: {cement_stats['streak']}
-Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                reply = (
+                    f"📊 Статистика цемов:\n"
+                    f"Всего: {cement_stats['total']}\n"
+                    f"Подряд: {cement_stats['streak']}\n"
+                    f"Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                )
                 achievement = check_cement_achievement(cement_stats["total"])
                 if achievement:
-                    reply += f"
-
-🎖 Достижение: {achievement.strip('*')}"
+                    reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
                 requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
                 return "OK", 200
-
-            if text.strip() in ["✅", "❌"]:
-                stats = load_stats()
-                today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
-                if today in stats:
-                    stats[today]["done"] = text.strip() == "✅"
-                    save_stats(stats)
-                    reply = "Отлично, цель выполнена! 🔥" if text.strip() == "✅" else "Хорошо, предложу снова позже ✌️"
-                else:
-                    reply = "На сегодня пока не задана цель 🤖"
-                requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
-                return "OK", 200
-
-            reply = f"NEXUS получил: {text}"
-            requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
 
         elif "callback_query" in data:
             query = data["callback_query"]
@@ -256,9 +242,7 @@ def telegram_webhook():
                 achievement = check_cement_achievement(cement_stats["total"])
                 reply = "Цем зафиксирован 💋"
                 if achievement:
-                    reply += f"
-
-🎖 Достижение: {achievement.strip('*')}"
+                    reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
 
             elif data_str == "cem_no" and today not in cement_stats["dates"]:
                 cement_stats["streak"] = 0
@@ -266,15 +250,15 @@ def telegram_webhook():
                 reply = "Не зафиксировано. Вечер без цема — неполный."
 
             elif data_str == "cem_stats":
-                reply = f"📊 Статистика цемов:
-Всего: {cement_stats['total']}
-Подряд: {cement_stats['streak']}
-Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                reply = (
+                    f"📊 Статистика цемов:\n"
+                    f"Всего: {cement_stats['total']}\n"
+                    f"Подряд: {cement_stats['streak']}\n"
+                    f"Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                )
                 achievement = check_cement_achievement(cement_stats["total"])
                 if achievement:
-                    reply += f"
-
-🎖 Достижение: {achievement.strip('*')}"
+                    reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
 
             else:
                 reply = "Уже зафиксировано сегодня."
