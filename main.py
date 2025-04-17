@@ -156,17 +156,18 @@ def telegram_webhook():
                 stats = load_stats()
                 completed = [g["goal"] for g in stats.values() if g.get("done")]
                 block, goal = choose_random_goal(goals, completed)
-                message = f"🌙 Вечерняя цель:
+                message = f"""🌙 Вечерняя цель:
 
 Цель на вечер: *{block}*
 🎯 *{goal['text']}*
 
-⏳ Время: 1–1.5 часа
-Когда закончишь — просто напиши:
+⏳ Время: 1–1.5 часа  
+Когда закончишь — просто напиши:  
 ✅ Сделал или ❌ Нет
 
-⚠ Обязательное задание:
-Цемнуть свою девушку. Без этого вечер не считается закрытым."
+⚠ Обязательное задание:  
+Цемнуть свою девушку. Без этого вечер не считается закрытым.
+"""
                 keyboard = [[
                     {"text": "Цемнул 💋", "callback_data": "cem_yes"},
                     {"text": "Забыл 😐", "callback_data": "cem_no"},
@@ -174,7 +175,12 @@ def telegram_webhook():
                 ]]
                 stats[today] = {"block": block, "goal": goal["text"], "done": False}
                 save_stats(stats)
-                requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": message, "parse_mode": "Markdown", "reply_markup": {"inline_keyboard": keyboard}})
+                requests.post(TELEGRAM_API_URL, json={
+                    "chat_id": chat_id,
+                    "text": message,
+                    "parse_mode": "Markdown",
+                    "reply_markup": {"inline_keyboard": keyboard}
+                })
 
             elif data_str == "evening_no":
                 reply = "Ты выбрал восстановление. Иногда это и есть самая важная цель. Nexus сохраняет спокойствие."
@@ -193,9 +199,7 @@ def telegram_webhook():
                 reply = "Цем зафиксирован 💋"
                 achievement = check_cement_achievement(cement_stats["total"])
                 if achievement:
-                    reply += f"
-
-🎖 Достижение: {achievement.strip('*')}"
+                    reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
                 requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
 
             elif data_str == "cem_no" and today not in cement_stats["dates"]:
@@ -205,15 +209,15 @@ def telegram_webhook():
                 requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
 
             elif data_str == "cem_stats":
-                reply = f"📊 Статистика цемов:
-Всего: {cement_stats['total']}
-Подряд: {cement_stats['streak']}
-Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                reply = (
+                    f"📊 Статистика цемов:\n"
+                    f"Всего: {cement_stats['total']}\n"
+                    f"Подряд: {cement_stats['streak']}\n"
+                    f"Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                )
                 achievement = check_cement_achievement(cement_stats["total"])
                 if achievement:
-                    reply += f"
-
-🎖 Достижение: {achievement.strip('*')}"
+                    reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
                 requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
 
         elif "message" in data:
@@ -229,15 +233,15 @@ def telegram_webhook():
                 reply = "Утро активировано."
             elif text.strip().lower() == "/цем":
                 cement_stats = load_cement_stats()
-                reply = f"📊 Статистика цемов:
-Всего: {cement_stats['total']}
-Подряд: {cement_stats['streak']}
-Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                reply = (
+                    f"📊 Статистика цемов:\n"
+                    f"Всего: {cement_stats['total']}\n"
+                    f"Подряд: {cement_stats['streak']}\n"
+                    f"Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                )
                 achievement = check_cement_achievement(cement_stats["total"])
                 if achievement:
-                    reply += f"
-
-🎖 Достижение: {achievement.strip('*')}"
+                    reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
             elif text.strip() == "✅" and today in stats:
                 stats[today]["done"] = True
                 save_stats(stats)
