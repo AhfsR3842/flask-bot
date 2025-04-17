@@ -262,14 +262,14 @@ def telegram_webhook():
             today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
             stats = load_stats()
 
-            if text.strip().lower() == "/start":
+           if text.strip().lower() == "/start":
                 reply = "Привет, Андрей. Я живой, командуй — /утро, /вечер или /цем."
+            elif text.strip().lower() == "/вечер":
+                ask_evening_readiness()
+                return "OK", 200
             elif text.strip().lower() == "/утро":
                 send_daily_message()
                 reply = "Утро активировано."
-                elif text.strip().lower() == "/вечер":
-                ask_evening_readiness()
-                return "OK", 200
             elif text.strip().lower() == "/цем":
                 cement_stats = load_cement_stats()
                 reply = (
