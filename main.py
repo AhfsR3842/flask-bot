@@ -4,7 +4,8 @@ import os
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime
 import pytz
-import random  # ← для генерации утреннего текста
+import random
+import json
 
 app = Flask(__name__)
 
@@ -13,7 +14,7 @@ BOT_TOKEN = "7693406334:AAEjWcw4rt7hUHGwnUN9z5uGR7ePY_Zi0qY"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 MY_CHAT_ID = "330754245"
 
-# === Генератор утреннего сообщения Nexus ===
+# === Утреннее сообщение ===
 def generate_morning_message():
     intro = [
         "Доброе утро, Андрей. Протокол Nexus активирован.\nТы не просто проснулся — ты возвращаешься к себе.",
@@ -75,7 +76,35 @@ def generate_morning_message():
 """
     return message
 
-# === Утреннее сообщение Nexus в 07:00 ===
+# === Вечерняя логика ===
+def load_goals():
+    with open("evening_goals.json", "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def load_stats():
+    if os.path.exists("evening_stats.json"):
+        with open("evening_stats.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+def save_stats(stats):
+    with open("evening_stats.json", "w", encoding="utf-8") as f:
+        json.dump(stats, f, ensure_ascii=False, indent=4)
+
+def choose_random_goal(goals, completed_goals):
+    available = {
+        block: [
+            g for g in items if g["repeatable"] or g["text"] not in completed_goals
+        ]
+        for block, items in goals.items()
+    }
+    available = {k: v for k, v in available.items() if v}
+    if not available:
+        return None, None
+    block = random.choice(list(available.keys()))
+    goal = random.choice(available[block])
+    return block, goal
+
 def send_daily_message():
     try:
         message = generate_morning_message()
@@ -89,6 +118,42 @@ def send_daily_message():
 
     except Exception as e:
         print("==> Ошибка при отправке:", e, flush=True)
+
+def send_evening_goal():
+    try:
+        goals = load_goals()
+        stats = load_stats()
+        today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
+
+        completed = [g["goal"] for g in stats.values() if g.get("done")]
+        block, goal = choose_random_goal(goals, completed)
+
+        if not goal:
+            message = "Все цели выполнены. Сегодня просто отдыхай 😌"
+        else:
+            message = f"""🌙 Вечерняя цель: *{block}*
+
+🎯 *{goal['text']}*
+
+⏳ Время: 1–1.5 часа  
+Когда закончишь — просто напиши:  
+✅ Сделал или ❌ Нет
+"""
+            stats[today] = {
+                "block": block,
+                "goal": goal["text"],
+                "done": False
+            }
+            save_stats(stats)
+
+        requests.post(TELEGRAM_API_URL, json={
+            "chat_id": MY_CHAT_ID,
+            "text": message,
+            "parse_mode": "Markdown"
+        })
+
+    except Exception as e:
+        print("==> Ошибка при отправке вечерней цели:", e, flush=True)
 
 # === Обработка входящих сообщений ===
 @app.route('/')
@@ -104,7 +169,24 @@ def telegram_webhook():
         if "message" in data:
             chat_id = data["message"]["chat"]["id"]
             text = data["message"].get("text", "")
-            reply = f"Алекс получил: {text}"
+# Команды для ручного вызова
+    if text.strip().lower() == "/утро":
+        send_daily_message()
+        return "OK", 200
+
+    if text.strip().lower() == "/вечер":
+        send_evening_goal()
+        return "OK", 200
+      
+            stats = load_stats()
+            today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
+
+            if today in stats and text.strip() in ["✅", "❌"]:
+                stats[today]["done"] = text.strip() == "✅"
+                save_stats(stats)
+                reply = "Отлично, цель выполнена! 🔥" if text.strip() == "✅" else "Хорошо, предложу снова позже ✌️"
+            else:
+                reply = f"Алекс получил: {text}"
 
             requests.post(TELEGRAM_API_URL, json={
                 "chat_id": chat_id,
@@ -118,7 +200,8 @@ def telegram_webhook():
 
 # === Планировщик (локальное время) ===
 scheduler = BackgroundScheduler(timezone='Europe/Kyiv')
-scheduler.add_job(send_daily_message, 'cron', hour=16, minute=50)
+scheduler.add_job(send_daily_message, 'cron', hour=7, minute=0)
+scheduler.add_job(send_evening_goal, 'cron', hour=21, minute=0)
 scheduler.start()
 
 if __name__ == '__main__':
