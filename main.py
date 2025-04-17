@@ -155,11 +155,6 @@ def send_evening_goal():
     except Exception as e:
         print("==> Ошибка при отправке вечерней цели:", e, flush=True)
 
-# === Обработка входящих сообщений ===
-@app.route('/')
-def home():
-    return "Алекс в сети."
-
 @app.route('/bot', methods=['POST'])
 def telegram_webhook():
     data = request.get_json()
@@ -169,14 +164,26 @@ def telegram_webhook():
         if "message" in data:
             chat_id = data["message"]["chat"]["id"]
             text = data["message"].get("text", "")
-# Команды для ручного вызова
-    if text.strip().lower() == "/утро":
-        send_daily_message()
-        return "OK", 200
 
-    if text.strip().lower() == "/вечер":
-        send_evening_goal()
-        return "OK", 200
+            if text.strip().lower() == "/утро":
+                send_daily_message()
+                return "OK", 200
+
+            if text.strip().lower() == "/вечер":
+                send_evening_goal()
+                return "OK", 200
+
+            # Остальная логика (✅ / ❌ и т.д.)
+            reply = f"Алекс получил: {text}"
+            requests.post(TELEGRAM_API_URL, json={
+                "chat_id": chat_id,
+                "text": reply
+            })
+
+    except Exception as e:
+        print("==> Ошибка:", e, flush=True)
+
+    return "OK", 200
       
             stats = load_stats()
             today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
