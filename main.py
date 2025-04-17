@@ -155,6 +155,11 @@ def send_evening_goal():
     except Exception as e:
         print("==> Ошибка при отправке вечерней цели:", e, flush=True)
 
+# === Обработка входящих сообщений ===
+@app.route('/')
+def home():
+    return "Алекс в сети."
+
 @app.route('/bot', methods=['POST'])
 def telegram_webhook():
     data = request.get_json()
@@ -173,28 +178,25 @@ def telegram_webhook():
                 send_evening_goal()
                 return "OK", 200
 
-            # Остальная логика (✅ / ❌ и т.д.)
+            if text.strip() in ["✅", "❌"]:
+                stats = load_stats()
+                today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
+
+                if today in stats:
+                    stats[today]["done"] = text.strip() == "✅"
+                    save_stats(stats)
+                    reply = "Отлично, цель выполнена! 🔥" if text.strip() == "✅" else "Хорошо, предложу снова позже ✌️"
+                else:
+                    reply = "На сегодня пока не задана цель 🤖"
+
+                requests.post(TELEGRAM_API_URL, json={
+                    "chat_id": chat_id,
+                    "text": reply
+                })
+
+                return "OK", 200
+
             reply = f"Алекс получил: {text}"
-            requests.post(TELEGRAM_API_URL, json={
-                "chat_id": chat_id,
-                "text": reply
-            })
-
-    except Exception as e:
-        print("==> Ошибка:", e, flush=True)
-
-    return "OK", 200
-      
-            stats = load_stats()
-            today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
-
-            if today in stats and text.strip() in ["✅", "❌"]:
-                stats[today]["done"] = text.strip() == "✅"
-                save_stats(stats)
-                reply = "Отлично, цель выполнена! 🔥" if text.strip() == "✅" else "Хорошо, предложу снова позже ✌️"
-            else:
-                reply = f"Алекс получил: {text}"
-
             requests.post(TELEGRAM_API_URL, json={
                 "chat_id": chat_id,
                 "text": reply
