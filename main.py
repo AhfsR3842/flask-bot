@@ -99,8 +99,12 @@ def ask_evening_readiness():
         {"text": "✅ Да", "callback_data": "evening_yes"},
         {"text": "❌ Не сегодня", "callback_data": "evening_no"},
         {"text": "⏳ Давай позже", "callback_data": "evening_later"}
-    ]]
-    requests.post(TELEGRAM_API_URL, json={"chat_id": MY_CHAT_ID, "text": message, "reply_markup": {"inline_keyboard": keyboard}})
+     ]]
+    requests.post(TELEGRAM_API_URL, json={
+        "chat_id": MY_CHAT_ID,
+        "text": message,
+        "reply_markup": {"inline_keyboard": keyboard}
+    })
 
 def follow_up_evening_prompt():
     status = load_evening_status()
