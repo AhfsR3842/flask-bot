@@ -10,7 +10,7 @@ import json
 app = Flask(__name__)
 
 # === Конфигурация Telegram ===
-BOT_TOKEN = "1440673261:AAGOxG1Tq4Qardu8ukf4SKYcCx501DR8ulg"
+BOT_TOKEN = "7693406334:AAGnATxMuZqQpHfD0spwCpt4DXaX0ciNS-o"
 TELEGRAM_API_URL = f"https://api.telegram.org/bot{BOT_TOKEN}/sendMessage"
 MY_CHAT_ID = "330754245"
 
