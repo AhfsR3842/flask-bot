@@ -217,8 +217,8 @@ def telegram_webhook():
 
 # === Планировщик (локальное время) ===
 scheduler = BackgroundScheduler(timezone='Europe/Kyiv')
-scheduler.add_job(send_daily_message, 'cron', hour=7, minute=0)
-scheduler.add_job(send_evening_goal, 'cron', hour=21, minute=0)
+scheduler.add_job(send_daily_message, 'cron', hour=13, minute=16)
+scheduler.add_job(send_evening_goal, 'cron', hour=13, minute=19)
 scheduler.start()
 
 if __name__ == '__main__':
