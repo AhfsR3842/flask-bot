@@ -114,7 +114,8 @@ def choose_random_goal(goals, completed_goals):
     block = random.choice(list(available.keys()))
     goal = random.choice(available[block])
     return block, goal
-    # === Вечерняя логика выбора состояния ===
+
+# === Вечерняя логика выбора состояния ===
 STATUS_FILE = "evening_status.json"
 
 def save_evening_status(status):
