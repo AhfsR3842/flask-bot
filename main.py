@@ -92,14 +92,14 @@ def load_evening_status():
     return {}
 
 def ask_evening_readiness():
-  message = """🌒 Как ты сегодня, Андрей?
+    message = """🌒 Как ты сегодня, Андрей?
 
 У тебя есть силы и немного времени для себя?"""
     keyboard = [[
         {"text": "✅ Да", "callback_data": "evening_yes"},
         {"text": "❌ Не сегодня", "callback_data": "evening_no"},
         {"text": "⏳ Давай позже", "callback_data": "evening_later"}
-     ]]
+    ]]
     requests.post(TELEGRAM_API_URL, json={
         "chat_id": MY_CHAT_ID,
         "text": message,
