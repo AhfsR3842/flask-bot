@@ -35,7 +35,8 @@ def generate_morning_message():
         "• 10 приседаний\n• 5 отжиманий\n• Потянись вверх 10 секунд",
         "• 20 вдохов и выдохов животом\n• 15 прыжков на месте\n• Наклон к полу с расслаблением шеи",
         "• 10 вращений плечами назад\n• 10 подъёмов на носки\n• Вдох — задержка — выдох ×3",
-        "• Планка — 30 секунд\n• Медленный наклон вбок ×2 стороны\n• Потянуться сидя на полу"
+        "• Планка — 30 секунд\n• Медленный наклон вбок ×2 стороны\n• Потянуться сидя на полу",
+        "• Растяжка рук и шеи\n• Круговые движения тазом\n• Глубокие вдохи на 3 счета"
     ]
 
     snack = [
@@ -77,6 +78,27 @@ def generate_morning_message():
     return message
 
 # === Вечерняя логика ===
+def load_cement_stats():
+    if os.path.exists("cement_stats.json"):
+        with open("cement_stats.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"dates": [], "total": 0, "streak": 0}
+
+def save_cement_stats(stats):
+    with open("cement_stats.json", "w", encoding="utf-8") as f:
+        json.dump(stats, f, ensure_ascii=False, indent=4)
+
+def check_cement_achievement(total):
+    achievements = {
+        5: "*Режим \"Нежность\" активирован. Nexus фиксирует стабильность.*",
+        10: "*Ты цемаешь системно. Уже почти привычка.*",
+        50: "*Формируется паттерн любви. Это красиво.*",
+        100: "*Сто вечерних поцелуев. Это не просто цифра.*",
+        500: "*Половина тысячи. Она знает. Nexus тоже.*",
+        1000: "*Ты переписал протоколы близости. Это уровень Бога.*"
+    }
+    return achievements.get(total, None)
+
 def load_goals():
     with open("evening_goals.json", "r", encoding="utf-8") as f:
         return json.load(f)
@@ -93,9 +115,7 @@ def save_stats(stats):
 
 def choose_random_goal(goals, completed_goals):
     available = {
-        block: [
-            g for g in items if g["repeatable"] or g["text"] not in completed_goals
-        ]
+        block: [g for g in items if g["repeatable"] or g["text"] not in completed_goals]
         for block, items in goals.items()
     }
     available = {k: v for k, v in available.items() if v}
@@ -109,13 +129,11 @@ def send_daily_message():
     try:
         message = generate_morning_message()
         print("==> Утреннее сообщение сгенерировано и отправляется", flush=True)
-
         requests.post(TELEGRAM_API_URL, json={
             "chat_id": MY_CHAT_ID,
             "text": message,
             "parse_mode": "Markdown"
         })
-
     except Exception as e:
         print("==> Ошибка при отправке:", e, flush=True)
 
@@ -128,37 +146,48 @@ def send_evening_goal():
         completed = [g["goal"] for g in stats.values() if g.get("done")]
         block, goal = choose_random_goal(goals, completed)
 
-        if not goal:
-            message = "Все цели выполнены. Сегодня просто отдыхай 😌"
-        else:
-            message = f"""🌙 Вечерняя цель: *{block}*
+        intro = random.choice([
+            "Солнце село. Остался ты и момент — что ты сделаешь с ним?",
+            "Ты прожил день. Теперь твой вечер. Сделай его значимым.",
+            "Пока все отвлекаются — ты можешь выбрать глубину.",
+            "Система ждёт сигнала. Вечер активен."
+        ])
 
+        message = f"""🌙 {intro}
+
+Цель на вечер: *{block}*
 🎯 *{goal['text']}*
 
 ⏳ Время: 1–1.5 часа  
 Когда закончишь — просто напиши:  
 ✅ Сделал или ❌ Нет
-"""
-            stats[today] = {
-                "block": block,
-                "goal": goal["text"],
-                "done": False
-            }
-            save_stats(stats)
 
-        requests.post(TELEGRAM_API_URL, json={
+⚠ Обязательное задание:  
+Цемнуть свою девушку. Без этого вечер не считается закрытым.
+"""
+
+        keyboard = [[
+            {"text": "Цемнул 💋", "callback_data": "cem_yes"},
+            {"text": "Забыл 😐", "callback_data": "cem_no"},
+            {"text": "📊 Статистика", "callback_data": "cem_stats"}
+        ]]
+
+        stats[today] = {
+            "block": block,
+            "goal": goal["text"],
+            "done": False
+        }
+        save_stats(stats)
+
+        requests.post(TELEGRAM_API_URL.replace("sendMessage", "sendMessage"), json={
             "chat_id": MY_CHAT_ID,
             "text": message,
-            "parse_mode": "Markdown"
+            "parse_mode": "Markdown",
+            "reply_markup": {"inline_keyboard": keyboard}
         })
 
     except Exception as e:
         print("==> Ошибка при отправке вечерней цели:", e, flush=True)
-
-# === Обработка входящих сообщений ===
-@app.route('/')
-def home():
-    return "Алекс в сети."
 
 @app.route('/bot', methods=['POST'])
 def telegram_webhook():
@@ -172,10 +201,7 @@ def telegram_webhook():
 
             if text.strip().lower() == "/start":
                 reply = "Привет, Андрей. Я живой, командуй – /утро, /вечер или просто поговори."
-                requests.post(TELEGRAM_API_URL, json={
-                    "chat_id": chat_id,
-                    "text": reply
-                })
+                requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
                 return "OK", 200
 
             if text.strip().lower() == "/утро":
@@ -186,39 +212,84 @@ def telegram_webhook():
                 send_evening_goal()
                 return "OK", 200
 
+            if text.strip().lower() == "/цем":
+                cement_stats = load_cement_stats()
+                reply = f"📊 Статистика цемов:
+Всего: {cement_stats['total']}
+Подряд: {cement_stats['streak']}
+Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                achievement = check_cement_achievement(cement_stats["total"])
+                if achievement:
+                    reply += f"
+
+🎖 Достижение: {achievement.strip('*')}"
+                requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
+                return "OK", 200
+
             if text.strip() in ["✅", "❌"]:
                 stats = load_stats()
                 today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
-
                 if today in stats:
                     stats[today]["done"] = text.strip() == "✅"
                     save_stats(stats)
                     reply = "Отлично, цель выполнена! 🔥" if text.strip() == "✅" else "Хорошо, предложу снова позже ✌️"
                 else:
                     reply = "На сегодня пока не задана цель 🤖"
-
-                requests.post(TELEGRAM_API_URL, json={
-                    "chat_id": chat_id,
-                    "text": reply
-                })
-
+                requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
                 return "OK", 200
 
-            reply = f"Алекс получил: {text}"
-            requests.post(TELEGRAM_API_URL, json={
-                "chat_id": chat_id,
-                "text": reply
-            })
+            reply = f"NEXUS получил: {text}"
+            requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
+
+        elif "callback_query" in data:
+            query = data["callback_query"]
+            chat_id = query["message"]["chat"]["id"]
+            data_str = query["data"]
+            cement_stats = load_cement_stats()
+            today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
+
+            if data_str == "cem_yes" and today not in cement_stats["dates"]:
+                cement_stats["dates"].append(today)
+                cement_stats["total"] += 1
+                cement_stats["streak"] += 1
+                save_cement_stats(cement_stats)
+                achievement = check_cement_achievement(cement_stats["total"])
+                reply = "Цем зафиксирован 💋"
+                if achievement:
+                    reply += f"
+
+🎖 Достижение: {achievement.strip('*')}"
+
+            elif data_str == "cem_no" and today not in cement_stats["dates"]:
+                cement_stats["streak"] = 0
+                save_cement_stats(cement_stats)
+                reply = "Не зафиксировано. Вечер без цема — неполный."
+
+            elif data_str == "cem_stats":
+                reply = f"📊 Статистика цемов:
+Всего: {cement_stats['total']}
+Подряд: {cement_stats['streak']}
+Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+                achievement = check_cement_achievement(cement_stats["total"])
+                if achievement:
+                    reply += f"
+
+🎖 Достижение: {achievement.strip('*')}"
+
+            else:
+                reply = "Уже зафиксировано сегодня."
+
+            requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
 
     except Exception as e:
         print("==> Ошибка:", e, flush=True)
 
     return "OK", 200
 
-# === Планировщик (локальное время) ===
+# === Планировщик ===
 scheduler = BackgroundScheduler(timezone='Europe/Kyiv')
-scheduler.add_job(send_daily_message, 'cron', hour=13, minute=16)
-scheduler.add_job(send_evening_goal, 'cron', hour=13, minute=19)
+scheduler.add_job(send_daily_message, 'cron', hour=7, minute=0)
+scheduler.add_job(send_evening_goal, 'cron', hour=21, minute=0)
 scheduler.start()
 
 if __name__ == '__main__':
