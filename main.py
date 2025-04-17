@@ -170,6 +170,14 @@ def telegram_webhook():
             chat_id = data["message"]["chat"]["id"]
             text = data["message"].get("text", "")
 
+            if text.strip().lower() == "/start":
+                reply = "Привет, Андрей. Я живой, командуй – /утро, /вечер или просто поговори."
+                requests.post(TELEGRAM_API_URL, json={
+                    "chat_id": chat_id,
+                    "text": reply
+                })
+                return "OK", 200
+
             if text.strip().lower() == "/утро":
                 send_daily_message()
                 return "OK", 200
