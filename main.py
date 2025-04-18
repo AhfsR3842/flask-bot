@@ -258,39 +258,40 @@ def telegram_webhook():
                 requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
 
         elif "message" in data:
-            chat_id = data["message"]["chat"]["id"]
-            text = data["message"].get("text", "")
-            today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
-            stats = load_stats()
+    chat_id = data["message"]["chat"]["id"]
+    text = data["message"].get("text", "")
+    today = datetime.now(pytz.timezone("Europe/Kyiv")).strftime("%Y-%m-%d")
+    stats = load_stats()
 
-           if text.strip().lower() == "/start":
-                reply = "Привет, Андрей. Я живой, командуй — /утро, /вечер или /цем."
-            elif text.strip().lower() == "/вечер":
-                ask_evening_readiness()
-                return "OK", 200
-            elif text.strip().lower() == "/утро":
-                send_daily_message()
-                reply = "Утро активировано."
-            elif text.strip().lower() == "/цем":
-                cement_stats = load_cement_stats()
-                reply = (
-                    f"📊 Статистика цемов:\n"
-                    f"Всего: {cement_stats['total']}\n"
-                    f"Подряд: {cement_stats['streak']}\n"
-                    f"Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
-                )
-                achievement = check_cement_achievement(cement_stats["total"])
-                if achievement:
-                    reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
-            elif text.strip() == "✅" and today in stats:
-                stats[today]["done"] = True
-                save_stats(stats)
-                reply = "Цель выполнена! 💪"
-            elif text.strip() == "❌" and today in stats:
-                reply = "Понял, попробуем снова завтра. ✌️"
-            else:
-                reply = f"Nexus получил: {text}"
-            requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
+    if text.strip().lower() == "/start":
+        reply = "Привет, Андрей. Я живой, командуй — /утро, /вечер или /цем."
+    elif text.strip().lower() == "/вечер":
+        ask_evening_readiness()
+        return "OK", 200
+    elif text.strip().lower() == "/утро":
+        send_daily_message()
+        reply = "Утро активировано."
+    elif text.strip().lower() == "/цем":
+        cement_stats = load_cement_stats()
+        reply = (
+            f"📊 Статистика цемов:\n"
+            f"Всего: {cement_stats['total']}\n"
+            f"Подряд: {cement_stats['streak']}\n"
+            f"Последний: {cement_stats['dates'][-1] if cement_stats['dates'] else '—'}"
+        )
+        achievement = check_cement_achievement(cement_stats["total"])
+        if achievement:
+            reply += f"\n\n🎖 Достижение: {achievement.strip('*')}"
+    elif text.strip() == "✅" and today in stats:
+        stats[today]["done"] = True
+        save_stats(stats)
+        reply = "Цель выполнена! 💪"
+    elif text.strip() == "❌" and today in stats:
+        reply = "Понял, попробуем снова завтра. ✌️"
+    else:
+        reply = f"Nexus получил: {text}"
+
+    requests.post(TELEGRAM_API_URL, json={"chat_id": chat_id, "text": reply})
     except Exception as e:
         print("==> Ошибка:", e, flush=True)
     return "OK", 200
